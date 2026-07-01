@@ -1,22 +1,33 @@
 """YOLOv8 object detection wrapper."""
 import numpy as np
 import cv2
+import logging
 from ultralytics import YOLO
 from config import YOLO_MODEL, DETECT_CONFIDENCE, DETECT_CLASSES
 
+logger = logging.getLogger(__name__)
 
 class ObjectDetector:
     def __init__(self, model_path: str = YOLO_MODEL):
-        print(f"[YOLO] Loading model {model_path} ...")
-        self.model = YOLO(model_path)
+        logger.info(f"[YOLO] Loading model {model_path} ...")
+        try:
+            self.model = YOLO(model_path)
+        except Exception as e:
+            logger.error(f"Failed to load YOLO model: {e}")
+            raise
         self.classes = DETECT_CLASSES
         self.conf = DETECT_CONFIDENCE
 
     def detect(self, frame: np.ndarray):
         """Return list of dicts: {class_name, confidence, bbox:[x1,y1,x2,y2]}."""
-        results = self.model.predict(
-            frame, conf=self.conf, classes=self.classes, verbose=False
-        )
+        try:
+            results = self.model.predict(
+                frame, conf=self.conf, classes=self.classes, verbose=False
+            )
+        except Exception as e:
+            logger.error(f"YOLO prediction error: {e}")
+            return []
+
         detections = []
         for r in results:
             for box in r.boxes:
